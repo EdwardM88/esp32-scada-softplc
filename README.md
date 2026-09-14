@@ -35,7 +35,8 @@ The system operates as an edge automation controller capable of real-time multi-
 | **SG90** |  PWM PIN | Control some processes |
 
 ## Electical diagram
-[![Electrical Diagram]()]()
+[![Electrical Diagram](./docs/Schematic_plc_type_prj_2026-09-14.png)](./docs/Schematic_plc_type_prj_2026-09-14.pdf)
+> 📄 **Download / View:** [Open Schematic PDF](./docs/Schematic_plc_type_prj_2026-09-14.pdf)
 
 ## Modbus Register Mapping
 

@@ -34,6 +34,9 @@ The system operates as an edge automation controller capable of real-time multi-
 | **Stepper Motor** | Digital Output GPIO | Control some processes |
 | **SG90** |  PWM PIN | Control some processes |
 
+## Electical diagram
+[![Electrical Diagram]()]()
+
 ## Modbus Register Mapping
 
 The server provides Holding Registers (`Function Code 0x03` / `0x06`) starting at base offset **100**:

@@ -1,7 +1,6 @@
 # ESP32 Soft-PLC & SCADA Node
 
 An industrial-grade Soft-PLC firmware built on the ESP32 platform, utilizing FreeRTOS for deterministic multi-tasking and Modbus TCP for seamless integration with SCADA/HMI systems.
-(not ready at the moment)
 
 ---
 ## IMPORTANT
@@ -56,5 +55,47 @@ The server provides Holding Registers (`Function Code 0x03` / `0x06`) starting a
 * **Framework:** PlatformIO / Arduino Core with native ESP-IDF driver calls (`driver/gpio.h`)
 * **RTOS:** FreeRTOS (multitasking via pinned tasks, tick-based delays)
 * **Industrial Protocol:** `emelianov/modbus-esp8266` (Modbus TCP Server)
+
+---
+
+Process Flow & Finite State Machine (FSM)
+
+The operational logic on the ESP32 cycles through five primary states:
+
+1. **`STATE_IDLE`**:  
+   The ultrasonic sensor (`HC-SR04`) monitors the infeed station. Once an object is confirmed within 10 cm over consecutive readings, the detection coil is flagged and the system initiates transport.
+
+2. **`STATE_TRANSPORT_TO_QC`**:  
+   ESP32 issues a `CMD_STEPPER_RUN` command to the Arduino Mega. The Mega steps the 28BYJ-48 motor asynchronously using Timer 1. If physical transport exceeds the safety deadline (`transportTimeOut`), the system trips into emergency stop. When transport finishes, the Mega replies with an acknowledge frame (`CMD_ACK_DONE`), transitioning the line to inspection.
+
+3. **`STATE_QC_INSPECTION`**:  
+   The station reads the environmental and optical characteristics of the part:
+   * **Ambient validation:** DHT11 temperature and relative humidity.
+   * **Surface reflection / Color check:** Analog photoresistor (LDR).  
+   Values are matched against configurable thresholds stored in Modbus Holding Registers (`temp_threshold`, `ldr_threshold`, `hum_threshold`). The part is marked either **Conforming (OK)** or **Non-Conforming (Reject)**.
+
+4. **`STATE_TRANSPORT_TO_SORT`**:  
+   The conveyor advances the inspected part toward the sorting diverter chute.
+
+5. **`STATE_SORT`**:  
+   * **Accepted parts:** Servomotor remains at default position (0°), permitting the part to slide into the finished batch bin (`total_ok_pieces++`).
+   * **Rejected parts:** Servomotor actuates to 90° for 800 ms, redirecting the defective part onto the scrap chute, and then resets (`total_rejects++`).  
+   The line resets internal flags and returns to `STATE_IDLE`.
+
+6. **`STATE_EMERGENCY`**:  
+   Triggered on conveyor timeouts or external emergency commands. All actuators are immediately halted, Modbus run coils are cleared, and audiovisual alarms (Red LED + Active Buzzer) are latched.
+
+---
+
+## Communication Protocol (ESP32 <-> Mega)
+
+Commands and handshakes are transmitted using a fixed 4-byte binary frame:
+
+| Byte Index | Field | Description | Example (Transport Run) | Example (ACK Done) |
+| :---: | :---: | :--- | :---: | :---: |
+| **0** | `HEADER` | Frame sync delimiter (`0xAA`) | `0xAA` | `0xAA` |
+| **1** | `CMD` | Command identifier byte | `0x01` (`CMD_STEPPER_RUN`) | `0x06` (`CMD_ACK_DONE`) |
+| **2** | `VAL` | Parameter payload / Steps factor / Angle | `0x14` (20 units) | `0x01` (Success) |
+| **3** | `CHK` | Longitudinal Redundancy XOR Checksum | `HEADER ^ CMD ^ VAL` | `HEADER ^ CMD ^ VAL` |
 
 ---

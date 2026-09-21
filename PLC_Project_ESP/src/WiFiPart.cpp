@@ -1,7 +1,7 @@
 #include "WiFiPart.h"
 
-static const char* ssid = "username"; // Replace with your Wi-Fi SSID
-static const char* password = "password"; // Replace with your Wi-Fi password
+static const char* ssid = "TP-Link_E364"; // Replace with your Wi-Fi SSID
+static const char* password = "79028097"; // Replace with your Wi-Fi password
 
 void initWiFi() {
     WiFi.mode(WIFI_STA); // Set Wi-Fi mode to station

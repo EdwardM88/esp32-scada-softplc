@@ -2,15 +2,18 @@
 
 void init_DCMotor() {
     // configure the motor control pins as output
-    DDRH |= (1 << DDH3);
+    DDRH |= (1 << DDH3);    //set pin 6 as output
 
     TCCR4A = (1 << COM4A1) | (1 << WGM41); // non-inverting mode, fast PWM
 
     TCCR4B = (1 << WGM43) | (1 << WGM42) | (1 << CS41); // prescaler 8, fast PWM mode
 
+    // 16 MHz / 8 = 2.000.000
+    // 20 ms = 20.000 us -> 40.000 tick
     ICR4 = 4000; // set the top value for 8-bit resolution
 
-    OCR4A = 3000;
+    // start position  0 grade
+    OCR4A = 2000;
 }
 
 void setMotorSpeed(uint8_t angle) {
@@ -19,5 +22,7 @@ void setMotorSpeed(uint8_t angle) {
         angle = 180;
     }
 
+    // 0 deg   -> 1000 us (2000 ticks)
+    // 180 deg -> 2000 us (4000 ticks)
     OCR4A = 2000 + ((uint32_t)angle * 2000) / 100;
 }

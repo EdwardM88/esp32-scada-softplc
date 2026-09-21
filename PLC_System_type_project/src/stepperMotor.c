@@ -1,8 +1,27 @@
 #include"stepperMotor.h"
 
+//variables for asyncron control
+static volatile uint16_t stepper_steps_left = 0;
+static volatile uint8_t  stepper_direction = 1;
+volatile bool stepper_is_busy = false;
+volatile bool stepper_motion_done = false;
+
 void initStepperMotor(void) {
-    //set port 8 & 9 as output
+    //set port 22,23 24 & w5 as output
     DDRA = (1 << DDA0) | (1 << DDA1) |  (1 << DDA2) | (1 << DDA3);
+    PORTA &= 0xF0; //coils interrupted
+
+    // configure Timer 1 in CTC Mode (Mode 4) with 64 prescaler
+    TCCR1A = 0;
+    TCCR1B = (1 << WGM12) | (1 << CS11) | (1 << CS10); // CTC + Prescaler 64
+    OCR1A  = 999;                                       //  4.0 ms
+    TCNT1  = 0;
+
+    TIMSK1 &= ~(1 << OCIE1A);
+
+    // global activation for interrups
+    sei();
+
 }
 
 void stepper_step(uint8_t step_index) {
@@ -29,23 +48,52 @@ void stepper_step(uint8_t step_index) {
 }
 
 void stepper_stop(void) {
-    PORTA &= 0xF0; // Oprește toate LED-urile (Pin 22, 23, 24, 25)
+    TIMSK1 &= ~(1 << OCIE1A); // stop all interruptions for Timer1
+    PORTA &= 0xF0; // stop all ports(22 23 24 25)
+    stepper_is_busy = false;
 }
 
 
 void stepper_rotate_steps(uint16_t steps, uint8_t dir) {
-    static int8_t step_pos = 0;
+   if(steps == 0) return;
 
-    for (uint16_t i = 0; i < steps; i++) {
-        if (dir) {
-            step_pos = (step_pos + 1) % 4;
-        } else {
-            step_pos = (step_pos - 1 + 4) % 4;
+    stepper_direction = dir;
+    stepper_steps_left = steps;
+    stepper_is_busy = true;
+    stepper_motion_done = false;
+
+    TCNT1 = 0;
+    TIMSK1 |= (1 << OCIE1A); // activate interruption 
+
+}
+
+// interruption routine
+ISR(TIMER1_COMPA_vect)
+{
+    static uint8_t stepP = 0;
+
+    if(stepper_steps_left > 0)
+    {
+        if(stepper_direction )
+        {
+            stepP = (stepP + 1) % 4;
+        }else
+        {
+            stepP = (stepP - 1 + 4) % 4;
         }
 
-        stepper_step(step_pos);
-        _delay_ms(4); // 4ms oferă cuplu bun și viteză stabilă
+        stepper_step(stepP);
+        stepper_steps_left--;
+
+         // verify if the process is done
+        if(stepper_steps_left == 0)
+        {
+            TIMSK1 &= ~(1 << OCIE1A); // stop interruption
+            PORTA &= 0xF0; // stop coils
+            stepper_is_busy = false;
+            stepper_motion_done =  true;
+        }
     }
 
-    stepper_stop(); // Stingem bobinele după terminarea mișcării
+   
 }

@@ -2,6 +2,8 @@
 
 void initBuzzer()
 {
+    gpio_reset_pin((gpio_num_t)Buzzer_Pin);
+
     gpio_config_t buzzer_conf{};
     buzzer_conf.pin_bit_mask = (1ULL << Buzzer_Pin); //mask on 23 pin
     buzzer_conf.mode = GPIO_MODE_OUTPUT;

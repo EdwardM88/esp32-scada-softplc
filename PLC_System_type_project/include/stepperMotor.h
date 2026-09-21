@@ -1,6 +1,14 @@
 #ifndef STEPPERMOTOR_H
+#define STEPPERMOTOR_H
+
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+extern volatile bool stepper_is_busy;
+extern volatile bool stepper_motion_done;
 
 void initStepperMotor();
 

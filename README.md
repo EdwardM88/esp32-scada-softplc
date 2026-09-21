@@ -4,6 +4,8 @@ An industrial-grade Soft-PLC firmware built on the ESP32 platform, utilizing Fre
 (not ready at the moment)
 
 ---
+## IMPORTANT
+"UART handshake ACK timing between Mega and ESP32 state machine during conveyor transport state is currently being fine-tuned (occasional state timeout under high loop frequency)."
 
 ## Overview
 
